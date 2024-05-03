@@ -115,34 +115,36 @@ flops_fft_list = []
 time_naive_list = []
 time_fft_list = []
 for n in ns:
-    a = np.random.randn(n)
-    x = np.random.randn(n)
+    a = np.random.randn(n).astype(np.double)
+    x = np.random.randn(n).astype(np.double)
     # Compute time and FLOPs (double precision) for naive method
-    start_time = time.time()
     high.start_counters(
         [
             events.PAPI_DP_OPS,
         ]
     )
 
+    start_time = time.time()
     sub_conv_matrix(a, n) @ x
+    end_time = time.time()
 
     flops_naive = high.stop_counters()
-    end_time = time.time()
     time_naive = end_time - start_time
 
-    start_time = time.time()
     high.start_counters(
         [
             events.PAPI_DP_OPS,
         ]
     )
+    start_time = time.time()
     conv_with_fft(a, x)
     end_time = time.time()
     flops_fft = high.stop_counters()
     time_fft = end_time - start_time
-    flops_fft = flops_fft[0]
-    flops_naive = flops_naive[0]
+    flops_fft = flops_fft[0] / n
+    flops_naive = flops_naive[0] / n
+    time_fft = time_fft / n
+    time_naive = time_naive / n
     # print (n, flops_naive, flops_fft)
     print("n: ", n)
     print("Naive FLOPs: ", flops_naive, "FFT FLOPs: ", flops_fft)
@@ -152,14 +154,19 @@ for n in ns:
     time_fft_list.append(time_fft)
     time_naive_list.append(time_naive)
 
+s = 1
+flops_naive_list = flops_naive_list[s:]
+flops_fft_list = flops_fft_list[s:]
+time_fft_list = time_fft_list[s:]
+time_naive_list = time_naive_list[s:]
+ns = ns[s:]
 # Plot naive flops and fft flops versus n
-plt.figure(figsize=(10, 5))
+plt.figure(figsize=(10, 6))
 plt.plot(ns, flops_naive_list, label="Naive FLOPs", marker="o")
 plt.plot(ns, flops_fft_list, label="FFT FLOPs", marker="x")
 plt.xscale("log")
-plt.yscale("log")
 plt.xlabel("Vector length n")
-plt.ylabel("FLOPs")
+plt.ylabel("average FLOPs / token numbers")
 plt.title("Comparison of FLOPs for Convolution Implementations")
 plt.legend()
 plt.grid(True)
@@ -167,13 +174,12 @@ plt.show()
 plt.savefig("conv_flops.png")
 
 # Plot naive time and fft time versus n
-plt.figure(figsize=(10, 5))
+plt.figure(figsize=(10, 6))
 plt.plot(ns, time_naive_list, label="Naive Time", marker="o")
 plt.plot(ns, time_fft_list, label="FFT Time", marker="x")
 plt.xscale("log")
-plt.yscale("log")
 plt.xlabel("Vector length n")
-plt.ylabel("Time (s)")
+plt.ylabel("average Time (s) / token numbers")
 plt.title("Comparison of Time for Convolution Implementations")
 plt.legend()
 plt.grid(True)
