@@ -12,6 +12,7 @@ TOKENIZER_PATH = "Meta-Llama-3-8B/tokenizer.model"
 MAX_SEQ_LEN = 128
 MAX_BATCH_SIZE = 1
 NUM_HEADS = 32
+SAVE_BLOCK_INDEX = 25
 
 
 def main():
@@ -31,6 +32,8 @@ def main():
         bos=True,
         eos=True,
     )
+    output = generator.tokenizer.decode(tokens)
+    print(output)
     tokens = torch.tensor([tokens], dtype=torch.long, device="cuda")
     seq_len = tokens.shape[1]
     
@@ -45,6 +48,7 @@ def main():
     for i, transformer_block in enumerate(generator.model.layers):
         k_value = transformer_block.attention.k_value
         q_value = transformer_block.attention.q_value
+        v_value = transformer_block.attention.v_value
         batch_size, num_head, n, d = q_value.shape
         # Create a 4d mask to only show the lower triangular part of the matrix q_value
         A_all = torch.matmul(q_value, k_value.permute(0, 1, 3, 2))
@@ -54,6 +58,11 @@ def main():
         max_abs_A1 = torch.max(max_abs_A1, dim=-2, keepdim=True)[0]
         A_all = (A_all - mean_A1) / max_abs_A1
         A_all = mask_all * A_all
+        if i == SAVE_BLOCK_INDEX:
+            print("save q k v value")
+            torch.save(q_value, 'q_value.pth')
+            torch.save(k_value, 'k_value.pth')
+            torch.save(v_value, 'v_value.pth')
         A_all_cpu = A_all.cpu().detach().numpy()
         plot_data.append(A_all_cpu)
 
