@@ -1,11 +1,5 @@
-import os
-import time
-
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from pypapi import events
-from pypapi import papi_high as high
 from torch import nn
 
 def get_b_tilde_from_b(b):
@@ -21,11 +15,6 @@ def get_b_tilde_from_b(b):
             sum_b_r += b[i]
             sum_b_r_minus_1 += b[i - 1]
             b_tilde[i, :] = np.exp(sum_b_r) - np.exp(sum_b_r_minus_1)
-        # stable exp
-        #sum_b_r_max = np.max(sum_b_r, axis=-1, keepdims=True)
-        #sum_b_r_minus_1_max = np.max(sum_b_r_minus_1, axis=-1, keepdims=True)
-        #b_tilde[i, :] = np.exp(sum_b_r - sum_b_r_max) - np.exp(sum_b_r_minus_1 - sum_b_r_minus_1_max)
-        #b_tilde[i, :] = np.exp(sum_b_r) - np.exp(sum_b_r_minus_1)
     return b_tilde
 
 
@@ -99,93 +88,3 @@ class ConvWithFFT(nn.Module):
         return torch.fft.ifft(
             torch.diag(torch.fft.fft(a_padded)) @ torch.fft.fft(x_padded)
         ).real[:n]
-
-
-def main():
-    # FLOPs and time in numpy
-    # Test case for sub_conv_matrix and conv_with_fft
-    a = np.array([1, 3, 5, 7, 9])
-    x = np.array([1, 2, 3, 4, 5])
-    #conv_with_fft = ConvWithFFT()
-    print(sub_conv_matrix(a, len(a)) @ x)
-    print(conv_with_fft(a, x))
-    
-    ns = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 32000]
-    flops_naive_list = []
-    flops_fft_list = []
-    time_naive_list = []
-    time_fft_list = []
-    for n in ns:
-        a = np.random.randn(n).astype(np.double)
-        x = np.random.randn(n).astype(np.double)
-        # Compute time and FLOPs (double precision) for naive method
-        high.start_counters(
-            [
-                events.PAPI_DP_OPS,
-            ]
-        )
-    
-        start_time = time.time()
-        sub_conv_matrix(a, n) @ x
-        end_time = time.time()
-    
-        flops_naive = high.stop_counters()
-        time_naive = end_time - start_time
-    
-        high.start_counters(
-            [
-                events.PAPI_DP_OPS,
-            ]
-        )
-        start_time = time.time()
-        conv_with_fft(a, x)
-        end_time = time.time()
-        flops_fft = high.stop_counters()
-        time_fft = end_time - start_time
-        flops_fft = flops_fft[0] / n
-        flops_naive = flops_naive[0] / n
-        time_fft = time_fft / n
-        time_naive = time_naive / n
-        # print (n, flops_naive, flops_fft)
-        print("n: ", n)
-        print("Naive FLOPs: ", flops_naive, "FFT FLOPs: ", flops_fft)
-        print("Naive time: ", time_naive, "FFT time: ", time_fft)
-        flops_fft_list.append(flops_fft)
-        flops_naive_list.append(flops_naive)
-        time_fft_list.append(time_fft)
-        time_naive_list.append(time_naive)
-    
-    s = 1
-    flops_naive_list = flops_naive_list[s:]
-    flops_fft_list = flops_fft_list[s:]
-    time_fft_list = time_fft_list[s:]
-    time_naive_list = time_naive_list[s:]
-    ns = ns[s:]
-    # Plot naive flops and fft flops versus n
-    plt.figure(figsize=(10, 6))
-    plt.plot(ns, flops_naive_list, label="Naive FLOPs", marker="o")
-    plt.plot(ns, flops_fft_list, label="FFT FLOPs", marker="x")
-    plt.xscale("log")
-    plt.xlabel("Vector length n")
-    plt.ylabel("average FLOPs / token numbers")
-    plt.title("Comparison of FLOPs for Convolution Implementations")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    plt.savefig("conv_flops.png")
-    
-    # Plot naive time and fft time versus n
-    plt.figure(figsize=(10, 6))
-    plt.plot(ns, time_naive_list, label="Naive Time", marker="o")
-    plt.plot(ns, time_fft_list, label="FFT Time", marker="x")
-    plt.xscale("log")
-    plt.xlabel("Vector length n")
-    plt.ylabel("average Time (s) / token numbers")
-    plt.title("Comparison of Time for Convolution Implementations")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    plt.savefig("conv_time.png")
-
-if __name__ == "__main__":
-    main()
