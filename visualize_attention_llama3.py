@@ -27,6 +27,9 @@ def main():
     )
 
     prompt = "sentence: based on a true and historically significant story\nthe answer is positive\nsentence:contains very few laughs and even less surprises\nthe answer is negative\nsentence: generous and subversive artworks\nthe answer is "
+    #with open('/home/heshanliu/LLMTest_NeedleInAHaystack/needlehaystack/PaulGrahamEssays/addiction.txt', 'r') as file:
+    #    prompt = file.read().replace('\n', '')
+    # repeat prompt 10 times
     tokens = generator.tokenizer.encode(
         prompt,
         bos=True,
@@ -63,23 +66,26 @@ def main():
             torch.save(q_value, 'q_value.pth')
             torch.save(k_value, 'k_value.pth')
             torch.save(v_value, 'v_value.pth')
-        A_all_cpu = A_all.cpu().detach().numpy()
-        plot_data.append(A_all_cpu)
+            A_all_cpu = A_all.cpu().detach().numpy()
+            plot_data.append(A_all_cpu)
 
     # Plot the attention matrix for each layer and each head
-    fig, axes = plt.subplots(cols, rows, figsize=(cols * 5, rows * 5))
+    #fig, axes = plt.subplots(cols, rows, figsize=(cols * 5, rows * 5))
+    plt.rcParams.update({'font.size': 55, 'legend.fontsize': 50})
+    fig, ax = plt.subplots(figsize=(14, 14))
     for i, data in enumerate(plot_data):
-        for h in range(rows):
-            ax = axes[i, h]
+        for h in [20]: #range(rows):
+            #ax = axes[i, h]
             cax = ax.imshow(data[0, h, :, :], cmap="viridis")
-            ax.set_title(f"Heatmap of Layer {i} Head {h}")
-            ax.set_xlabel("Target Position")
-            ax.set_ylabel("Source Position")
+            ax.set_title(f"Heatmap of Layer 25 Head {h}", fontweight='bold')
+            ax.set_xlabel("Target Position", fontweight='bold')
+            ax.set_ylabel("Source Position", fontweight='bold')
             # Add a color bar to each subplot
-            plt.colorbar(cax, ax=ax)
+            plt.colorbar(cax, ax=ax, fraction=0.046, pad=0.04)
 
     plt.tight_layout()
-    plt.savefig(f"{output_folder}/all_attention_block.png")
+    plt.savefig(f"{output_folder}/best.pdf")
+    #plt.savefig(f"{output_folder}/all_attention_block.png")
 
 
 if __name__ == "__main__":

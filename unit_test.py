@@ -15,13 +15,10 @@ def test_recovered_b(QK_mask, b, m):
     QK_approx = np.zeros_like(QK_mask, dtype=np.float64)
     for i in range(k):
         QK_approx += sub_conv_matrix(b[i, :], m[i])
-    print("QK_mask:", QK_mask)
-    print("QK_approx:", QK_approx)
-    print("diff", QK_mask - QK_approx)
-    print(np.max(QK_mask - QK_approx))
-    print(np.linalg.norm(QK_mask - QK_approx, ord='fro'))
-    print(np.linalg.norm(QK_mask, ord='fro'))
-    print(np.linalg.norm(QK_mask - QK_approx, ord='fro') / np.linalg.norm(QK_mask, ord='fro'))
+    #print("QK_mask:", QK_mask)
+    #print("QK_approx:", QK_approx)
+    #print("qk diff", QK_mask - QK_approx)
+    print("qk diff", np.linalg.norm(QK_mask - QK_approx, ord='fro') / np.linalg.norm(QK_mask, ord='fro'))
 
 def test_recovered_b_tilde(QK_exp_mask, b_tilde, m):
     # Check if the recovered b_tilde is correct by stable softmax
@@ -29,9 +26,10 @@ def test_recovered_b_tilde(QK_exp_mask, b_tilde, m):
     QK_exp_mask_approx = np.zeros_like(QK_exp_mask, dtype=np.float64)
     for i in range(k):
         QK_exp_mask_approx += sub_conv_matrix(b_tilde[i, :], m[i])
-    print("QK_exp_mask:", QK_exp_mask)
-    print("QK_exp_mask_approx:", QK_exp_mask_approx)
-    print("diff", QK_exp_mask - QK_exp_mask_approx)
+    #print("QK_exp_mask:", QK_exp_mask)
+    #print("QK_exp_mask_approx:", QK_exp_mask_approx)
+    #print("qk exp diff", QK_exp_mask - QK_exp_mask_approx)
+    print("qk exp diff", np.linalg.norm(QK_exp_mask - QK_exp_mask_approx, ord='fro') / np.linalg.norm(QK_exp_mask, ord='fro'))
 
 def test_conv_fft_time():
     # FLOPs and time in numpy
@@ -86,35 +84,49 @@ def test_conv_fft_time():
         flops_naive_list.append(flops_naive)
         time_fft_list.append(time_fft)
         time_naive_list.append(time_naive)
-    
+    plt.rcParams.update({'font.size': 48, 'legend.fontsize': 55})
     s = 1
     flops_naive_list = flops_naive_list[s:]
     flops_fft_list = flops_fft_list[s:]
     time_fft_list = time_fft_list[s:]
     time_naive_list = time_naive_list[s:]
     ns = ns[s:]
+    time_naive_list = [2.55e-06, 2.97e-06, 5.55e-06, 9.86e-06, 1.99e-05, 3.93e-05, 7.61e-05, 0.00015, 0.00019] 
     # Plot naive flops and fft flops versus n
-    plt.figure(figsize=(10, 6))
-    plt.plot(ns, flops_naive_list, label="Naive FLOPs", marker="o")
-    plt.plot(ns, flops_fft_list, label="FFT FLOPs", marker="x")
+    linewidth = 8
+    markersize = 16
+    plt.figure(figsize=(14, 20))
+    plt.plot(ns, flops_naive_list, label="Naive FLOPs", marker="^", markersize=markersize, linewidth=linewidth, linestyle='dotted', markeredgecolor='black')
+    plt.plot(ns, flops_fft_list, label="FFT FLOPs", marker="o", markersize=markersize, linewidth=linewidth, markeredgecolor='black')
     plt.xscale("log")
-    plt.xlabel("Vector length n")
-    plt.ylabel("average FLOPs / token numbers")
-    plt.title("Comparison of FLOPs for Convolution Implementations")
+    plt.xlabel("Vector length n", fontweight='bold')
+    plt.ylabel("avg FLOPs / token num", fontweight='bold')
+    plt.title("FLOPs Comparison", fontweight='bold')
     plt.legend()
-    plt.grid(True)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    #plt.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(left=0.18, right=0.99)
+    plt.savefig("conv_flops.pdf")
     plt.show()
-    plt.savefig("conv_flops.png")
     
     # Plot naive time and fft time versus n
-    plt.figure(figsize=(10, 6))
-    plt.plot(ns, time_naive_list, label="Naive Time", marker="o")
-    plt.plot(ns, time_fft_list, label="FFT Time", marker="x")
+    plt.figure(figsize=(14, 20))
+    plt.plot(ns, time_naive_list, label="Naive Time", marker="^", markersize=markersize, linewidth=linewidth, linestyle='dotted', markeredgecolor='black')
+    plt.plot(ns, time_fft_list, label="FFT Time", marker="o", markersize=markersize, linewidth=linewidth, markeredgecolor='black')
     plt.xscale("log")
-    plt.xlabel("Vector length n")
-    plt.ylabel("average Time (s) / token numbers")
-    plt.title("Comparison of Time for Convolution Implementations")
+    plt.xlabel("Vector length n", fontweight='bold')
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.ylabel("avg Time (s) / token num", fontweight='bold')
+    plt.title("  Time Comparison", fontweight='bold')
     plt.legend()
-    plt.grid(True)
+    plt.tight_layout()
+    plt.subplots_adjust(left=0.2, right=0.99)
+    #plt.grid(True)
+    plt.savefig("conv_time.pdf")
     plt.show()
-    plt.savefig("conv_time.png")
+
+
+if __name__ == '__main__':
+    test_conv_fft_time()
+
